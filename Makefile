@@ -22,6 +22,7 @@ clean:
 	rm .pi
 
 show:
+	cat .k; echo
 	cat .tinit; echo
 	cat .salt; echo
 	cat .pk; echo
