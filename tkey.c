@@ -57,6 +57,7 @@ int write_string_file(const char *filename,
         return 1;
     }
     r = fprintf(file, "%s", value);
+    fclose(file);
     return 0;
 }
 
@@ -68,6 +69,7 @@ int write_integer_file(const char *filename,
         return 1;
     }
     r = fprintf(file, "%u", value);
+    fclose(file);
     return 0;
 }
 
@@ -100,6 +102,7 @@ int32_t get_tinit() {
     int32_t tinit;
     FILE *file = fopen(TINIT_FILENAME, "r");
     fscanf(file, "%" PRId32, &tinit);
+    fclose(file);
     return tinit;
 }
 
@@ -107,6 +110,7 @@ int32_t get_tprev() {
     int32_t tprev;
     FILE *file = fopen(TPREV_FILENAME, "r");
     fscanf(file, "%" PRId32, &tprev);
+    fclose(file);
     return tprev;
 }
 
@@ -114,6 +118,7 @@ int32_t get_k() {
     int32_t k;
     FILE *file = fopen(K_FILENAME, "r");
     fscanf(file, "%" PRId32, &k);
+    fclose(file);
     return k;
 }
 
@@ -126,6 +131,7 @@ void get_pk(uint8_t *pk) {
     uint8_t encoded[BASE32_ENCODED_LENGTH] = {0};
     FILE *file = fopen(PK_FILENAME, "r");
     fscanf(file, "%s", encoded);
+    fclose(file);
     base32_decode(encoded, pk, BASE32_ENCODED_LENGTH);
 }
 
@@ -137,6 +143,7 @@ void get_salt(uint8_t *salt) {
     uint8_t encoded[BASE32_ENCODED_LENGTH] = {0};
     FILE *file = fopen(SALT_FILENAME, "r");
     fscanf(file, "%s", encoded);
+    fclose(file);
     base32_decode(encoded, salt, BASE32_ENCODED_LENGTH);
 }
 
@@ -192,6 +199,7 @@ void get_pi(uint8_t *pi) {
     uint8_t encoded[BASE32_ENCODED_LENGTH] = {0};
     FILE *file = fopen(PI_FILENAME, "r");
     fscanf(file, "%s", encoded);
+    fclose(file);
     base32_decode(encoded, pi, BASE32_ENCODED_LENGTH);
 }
 
@@ -199,6 +207,7 @@ void get_pprev(uint8_t *pprev) {
     uint8_t encoded[BASE32_ENCODED_LENGTH] = {0};
     FILE *file = fopen(PPREV_FILENAME, "r");
     fscanf(file, "%s", encoded);
+    fclose(file);
     base32_decode(encoded, pprev, BASE32_ENCODED_LENGTH);
 }
 
