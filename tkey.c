@@ -334,21 +334,76 @@ int check() {
 }
 
 int main(int argc, char* argv[]) {
-
+    double max = 0;
+    clock_t tot_start, tot_end;
+    double sub_tot;
+    double tot = 0;
+    clock_t start, end;
+   
     if (argc != 2) {
         printf("Usage: %s [mode]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
+    
     if (!strncmp(argv[1], "0", 1))
         setup();
+        
     else if (!strncmp(argv[1], "1", 1))
         gen();
+        
     else if (!strncmp(argv[1], "2", 1))
         check();
+        
+    else if (!strncmp(argv[1], "time_setup", 1)){
+        tot_start = clock();
+        for (int j = 1; j <= 50; j++) { 
+            start = clock();
+            setup();
+            end = clock();
+            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
+            if (sub_tot > max) {
+                max = sub_tot;
+            }
+        }
+        tot_end = clock();
+        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
+        printf("Time for setup (in seconds): %lf\n",tot/50);
+    }
+    
+    else if (!strncmp(argv[1], "time_gen", 1)){
+        tot_start = clock();
+        setup();
+        for (int j = 1; j <= 50; j++) { 
+            start = clock();
+            gen();
+            end = clock();
+            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
+            if (sub_tot > max) {
+                max = sub_tot;
+            }
+        }
+        tot_end = clock();
+        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
+        printf("Time for password generation (in seconds): %lf\n",tot/50);
+    }
+    
+    else if (!strncmp(argv[1], "time_check", 1)){
+        tot_start = clock();
+        setup();
+        for (int j = 1; j <= 50; j++) { 
+            gen();
+            start = clock();
+            check();
+            end = clock();
+            tot += (double)(end - start)/CLOCKS_PER_SEC;
+        }
+        tot_end = clock();
+        printf("Time for password verification (in seconds): %lf\n",tot/50);
+    }
+    
     else
         printf("[mode] must be a value in {0, 1, 2}\n");
-
+    
     return 0;
 }
 
