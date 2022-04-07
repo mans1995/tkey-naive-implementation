@@ -42,12 +42,18 @@
 #define  AUTH_FAILURE_MSG "Failed to authenticate.\n"
 #define  AUTH_SUCCESS_MSG "Successfully authenticated!\n"
 
-// Variables
+// Constants
 #define           SALT_LENGTH 10      // 80 bits
 #define           PASS_LENGTH 17      // 130 bits
 #define BASE32_ENCODED_LENGTH 64
 #define    TIME_SLOT_DURATION 30
+#define          NUMBER_TESTS 50
+#define        DAY_TO_SECONDS 86400
 
+
+// Global variables
+int GIVE_OUTPUT = 1;
+int32_t K = 0;
 
 int write_string_file(const char *filename,
                       uint8_t *value) {
@@ -95,7 +101,7 @@ void print_hexs(uint8_t *hash, int size) {
 
 int32_t gen_t() {
     time_t secs = time(NULL);
-    return (int32_t) (secs / TIME_SLOT_DURATION);
+    return (int32_t)(secs / TIME_SLOT_DURATION);
 }
 
 int32_t get_tinit() {
@@ -211,6 +217,13 @@ void get_pprev(uint8_t *pprev) {
     base32_decode(encoded, pprev, BASE32_ENCODED_LENGTH);
 }
 
+void write_file_k(int32_t k) {
+    if (write_integer_file(K_FILENAME, k)) {
+        printf(K_FILE_WRITE_ERROR_MSG);
+        exit(EXIT_FAILURE);
+    }
+}
+
 void write_file_tinit(int32_t tinit) {
     if (write_integer_file(TINIT_FILENAME, tinit)) {
         printf(TINIT_FILE_WRITE_ERROR_MSG);
@@ -281,10 +294,11 @@ void setup() {
     write_file_tprev(tinit);
     write_file_pprev(pinit);
 
-    printf(SETUP_COMPLETE);
+    if (GIVE_OUTPUT)
+        printf(SETUP_COMPLETE);
 }
 
-void gen() {
+void gen(int32_t tahead) {
 
     int32_t tinit, ti, i, k;
     uint8_t salt[SALT_LENGTH] = {0};
@@ -293,7 +307,7 @@ void gen() {
 
     tinit = get_tinit();
     k = get_k();
-    ti = gen_t();
+    ti = gen_t() + tahead;
     i = ti - tinit;
     get_salt(salt);
     get_pk(pk);
@@ -301,10 +315,11 @@ void gen() {
 
     write_file_pi(pi);
 
-    printf(PASS_GENERATION);
+    if (GIVE_OUTPUT)
+        printf(PASS_GENERATION);
 }
 
-int check() {
+int check(int32_t tahead) {
 
     int32_t tinit, tprev, ti, i, k;
     uint8_t   salt[SALT_LENGTH] = {0};
@@ -312,12 +327,13 @@ int check() {
     uint8_t pprevp[PASS_LENGTH] = {0};
     uint8_t     pi[PASS_LENGTH] = {0};
 
-    printf(PASS_VERIFICATION);
+    if (GIVE_OUTPUT)
+        printf(PASS_VERIFICATION);
 
     tinit = get_tinit();
     tprev = get_tprev();
     k = get_k();
-    ti = gen_t();
+    ti = gen_t() + tahead;
     i = ti - tinit;
     get_salt(salt);
     get_pi(pi);
@@ -327,19 +343,16 @@ int check() {
     if (!strncmp(pprev, pprevp, PASS_LENGTH)) {
         write_file_tprev(ti);
         write_file_pprev(pi);
-        printf(AUTH_SUCCESS_MSG);
+        if (GIVE_OUTPUT)
+            printf(AUTH_SUCCESS_MSG);
     } else {
-        printf(AUTH_FAILURE_MSG);
+        if (GIVE_OUTPUT)
+            printf(AUTH_FAILURE_MSG);
     }
 }
 
 int main(int argc, char* argv[]) {
-    double max = 0;
-    clock_t tot_start, tot_end;
-    double sub_tot;
-    double tot = 0;
-    clock_t start, end;
-   
+
     if (argc != 2) {
         printf("Usage: %s [mode]\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -349,60 +362,62 @@ int main(int argc, char* argv[]) {
         setup();
         
     else if (!strncmp(argv[1], "1", 1))
-        gen();
+        gen(0);
         
     else if (!strncmp(argv[1], "2", 1))
-        check();
+        check(0);
+    
+    else if (!strncmp(argv[1], "tests", 5)){
+        double tot_setup = 0;
+        double tot_gen = 0;
+        double tot_check = 0;
         
-    else if (!strncmp(argv[1], "time_setup", 1)){
-        tot_start = clock();
-        for (int j = 1; j <= 50; j++) { 
-            start = clock();
-            setup();
-            end = clock();
-            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
-            if (sub_tot > max) {
-                max = sub_tot;
+        clock_t start_setup, end_setup;
+        clock_t start_gen, end_gen;
+        clock_t start_check, end_check;
+        
+        int32_t t1week = (int32_t)(7 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
+        int32_t t2weeks = (int32_t)(14 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
+        int32_t t1month = (int32_t)(30 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
+        
+        int32_t login_times[3] = {t1week, t2weeks, t1month};
+        int32_t total_auth_times[3] = {1000000, 2000000, 4000000};
+
+        char* login_periods[3] = {"1 week", "2 weeks", "1 month"};
+        char* total_auth_periods[3] = {"1 year", "2 years", "4 years"};
+
+        printf("Running tests...\n\n");
+        GIVE_OUTPUT = 0;
+
+        for (int i = 0; i < 3; i++) {
+            write_file_k(total_auth_times[i]);
+            for (int j = 1; j <= NUMBER_TESTS; j++) {
+                // Setup duration
+                start_setup = clock();
+                setup();
+                end_setup = clock();
+                // Password generation duration
+                start_gen = clock();
+                gen(login_times[i]);
+                end_gen = clock();
+                // Password verification duration
+                start_check = clock();
+                check(login_times[i]);
+                end_check = clock();
+                // Time differences
+                tot_setup += (double)(end_setup - start_setup)/CLOCKS_PER_SEC;
+                tot_gen += (double)(end_gen - start_gen)/CLOCKS_PER_SEC;
+                tot_check += (double)(end_check - start_check)/CLOCKS_PER_SEC;
             }
+            printf("[Total auth period %s - Client logs in every %s]\n", total_auth_periods[i], login_periods[i]);
+            printf("Mean time for setup (in seconds): %lf\n", tot_setup/NUMBER_TESTS);
+            printf("Mean time for password generation (in seconds): %lf\n", tot_gen/NUMBER_TESTS);
+            printf("Mean time for password verification (in seconds): %lf\n\n", tot_check/NUMBER_TESTS);
         }
-        tot_end = clock();
-        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
-        printf("Time for setup (in seconds): %lf\n",tot/50);
-    }
-    
-    else if (!strncmp(argv[1], "time_gen", 1)){
-        tot_start = clock();
-        setup();
-        for (int j = 1; j <= 50; j++) { 
-            start = clock();
-            gen();
-            end = clock();
-            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
-            if (sub_tot > max) {
-                max = sub_tot;
-            }
-        }
-        tot_end = clock();
-        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
-        printf("Time for password generation (in seconds): %lf\n",tot/50);
-    }
-    
-    else if (!strncmp(argv[1], "time_check", 1)){
-        tot_start = clock();
-        setup();
-        for (int j = 1; j <= 50; j++) { 
-            gen();
-            start = clock();
-            check();
-            end = clock();
-            tot += (double)(end - start)/CLOCKS_PER_SEC;
-        }
-        tot_end = clock();
-        printf("Time for password verification (in seconds): %lf\n",tot/50);
     }
     
     else
-        printf("[mode] must be a value in {0, 1, 2}\n");
+        printf("[mode] must be a value in {0, 1, 2} or {tests}\n");
     
     return 0;
 }
