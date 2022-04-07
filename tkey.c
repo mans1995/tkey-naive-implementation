@@ -133,7 +133,6 @@ void get_pk(uint8_t *pk) {
     fscanf(file, "%s", encoded);
     fclose(file);
     base32_decode(encoded, pk, BASE32_ENCODED_LENGTH);
-    fclose(file);
 }
 
 void gen_salt(uint8_t *salt) {
@@ -146,7 +145,6 @@ void get_salt(uint8_t *salt) {
     fscanf(file, "%s", encoded);
     fclose(file);
     base32_decode(encoded, salt, BASE32_ENCODED_LENGTH);
-    fclose(file);
 }
 
 void gen_pi(int32_t tinit, uint8_t *salt,
@@ -203,7 +201,6 @@ void get_pi(uint8_t *pi) {
     fscanf(file, "%s", encoded);
     fclose(file);
     base32_decode(encoded, pi, BASE32_ENCODED_LENGTH);
-    fclose(file);
 }
 
 void get_pprev(uint8_t *pprev) {
@@ -212,7 +209,6 @@ void get_pprev(uint8_t *pprev) {
     fscanf(file, "%s", encoded);
     fclose(file);
     base32_decode(encoded, pprev, BASE32_ENCODED_LENGTH);
-    fclose(file);
 }
 
 void write_file_tinit(int32_t tinit) {
