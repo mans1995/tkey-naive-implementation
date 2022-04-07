@@ -57,6 +57,7 @@ int write_string_file(const char *filename,
         return 1;
     }
     r = fprintf(file, "%s", value);
+    fclose(file);
     return 0;
 }
 
@@ -68,6 +69,7 @@ int write_integer_file(const char *filename,
         return 1;
     }
     r = fprintf(file, "%u", value);
+    fclose(file);
     return 0;
 }
 
@@ -100,6 +102,7 @@ int32_t get_tinit() {
     int32_t tinit;
     FILE *file = fopen(TINIT_FILENAME, "r");
     fscanf(file, "%" PRId32, &tinit);
+    fclose(file);
     return tinit;
 }
 
@@ -107,6 +110,7 @@ int32_t get_tprev() {
     int32_t tprev;
     FILE *file = fopen(TPREV_FILENAME, "r");
     fscanf(file, "%" PRId32, &tprev);
+    fclose(file);
     return tprev;
 }
 
@@ -114,6 +118,7 @@ int32_t get_k() {
     int32_t k;
     FILE *file = fopen(K_FILENAME, "r");
     fscanf(file, "%" PRId32, &k);
+    fclose(file);
     return k;
 }
 
@@ -127,6 +132,7 @@ void get_pk(uint8_t *pk) {
     FILE *file = fopen(PK_FILENAME, "r");
     fscanf(file, "%s", encoded);
     base32_decode(encoded, pk, BASE32_ENCODED_LENGTH);
+    fclose(file);
 }
 
 void gen_salt(uint8_t *salt) {
@@ -138,6 +144,7 @@ void get_salt(uint8_t *salt) {
     FILE *file = fopen(SALT_FILENAME, "r");
     fscanf(file, "%s", encoded);
     base32_decode(encoded, salt, BASE32_ENCODED_LENGTH);
+    fclose(file);
 }
 
 void gen_pi(int32_t tinit, uint8_t *salt,
@@ -193,6 +200,7 @@ void get_pi(uint8_t *pi) {
     FILE *file = fopen(PI_FILENAME, "r");
     fscanf(file, "%s", encoded);
     base32_decode(encoded, pi, BASE32_ENCODED_LENGTH);
+    fclose(file);
 }
 
 void get_pprev(uint8_t *pprev) {
@@ -200,6 +208,7 @@ void get_pprev(uint8_t *pprev) {
     FILE *file = fopen(PPREV_FILENAME, "r");
     fscanf(file, "%s", encoded);
     base32_decode(encoded, pprev, BASE32_ENCODED_LENGTH);
+    fclose(file);
 }
 
 void write_file_tinit(int32_t tinit) {
@@ -325,21 +334,76 @@ int check() {
 }
 
 int main(int argc, char* argv[]) {
-
+    double max = 0;
+    clock_t tot_start, tot_end;
+    double sub_tot;
+    double tot = 0;
+    clock_t start, end;
+   
     if (argc != 2) {
         printf("Usage: %s [mode]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-
+    
     if (!strncmp(argv[1], "0", 1))
         setup();
+        
     else if (!strncmp(argv[1], "1", 1))
         gen();
+        
     else if (!strncmp(argv[1], "2", 1))
         check();
+        
+    else if (!strncmp(argv[1], "time_setup", 1)){
+        tot_start = clock();
+        for (int j = 1; j <= 50; j++) { 
+            start = clock();
+            setup();
+            end = clock();
+            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
+            if (sub_tot > max) {
+                max = sub_tot;
+            }
+        }
+        tot_end = clock();
+        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
+        printf("Time for setup (in seconds): %lf\n",tot/50);
+    }
+    
+    else if (!strncmp(argv[1], "time_gen", 1)){
+        tot_start = clock();
+        setup();
+        for (int j = 1; j <= 50; j++) { 
+            start = clock();
+            gen();
+            end = clock();
+            sub_tot = (double)(end - start)/CLOCKS_PER_SEC;
+            if (sub_tot > max) {
+                max = sub_tot;
+            }
+        }
+        tot_end = clock();
+        tot = (double)(tot_end - tot_start)/CLOCKS_PER_SEC;
+        printf("Time for password generation (in seconds): %lf\n",tot/50);
+    }
+    
+    else if (!strncmp(argv[1], "time_check", 1)){
+        tot_start = clock();
+        setup();
+        for (int j = 1; j <= 50; j++) { 
+            gen();
+            start = clock();
+            check();
+            end = clock();
+            tot += (double)(end - start)/CLOCKS_PER_SEC;
+        }
+        tot_end = clock();
+        printf("Time for password verification (in seconds): %lf\n",tot/50);
+    }
+    
     else
         printf("[mode] must be a value in {0, 1, 2}\n");
-
+    
     return 0;
 }
 
