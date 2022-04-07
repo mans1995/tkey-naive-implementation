@@ -51,9 +51,9 @@
 #define        DAY_TO_SECONDS 86400
 
 
-// Global variables
+// Global variable
 int GIVE_OUTPUT = 1;
-int32_t K = 0;
+
 
 int write_string_file(const char *filename,
                       uint8_t *value) {
