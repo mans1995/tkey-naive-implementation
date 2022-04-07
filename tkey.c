@@ -357,31 +357,31 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s [mode]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    
+
     if (!strncmp(argv[1], "0", 1))
         setup();
-        
+
     else if (!strncmp(argv[1], "1", 1))
         gen(0);
-        
+
     else if (!strncmp(argv[1], "2", 1))
         check(0);
-    
+
     else if (!strncmp(argv[1], "tests", 5)){
         double tot_setup = 0;
         double tot_gen = 0;
         double tot_check = 0;
-        
+
         clock_t start_setup, end_setup;
         clock_t start_gen, end_gen;
         clock_t start_check, end_check;
-        
+
         int32_t t1week = (int32_t)(7 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
         int32_t t2weeks = (int32_t)(14 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
         int32_t t1month = (int32_t)(30 * DAY_TO_SECONDS / TIME_SLOT_DURATION);
-        
+
         int32_t login_times[3] = {t1week, t2weeks, t1month};
-        int32_t total_auth_times[3] = {1000000, 2000000, 4000000};
+        int32_t total_auth_times[3] = {1048576, 2097152, 4194304};
 
         char* login_periods[3] = {"1 week", "2 weeks", "1 month"};
         char* total_auth_periods[3] = {"1 year", "2 years", "4 years"};
@@ -415,10 +415,10 @@ int main(int argc, char* argv[]) {
             printf("Mean time for password verification (in seconds): %lf\n\n", tot_check/NUMBER_TESTS);
         }
     }
-    
+
     else
         printf("[mode] must be a value in {0, 1, 2} or {tests}\n");
-    
+
     return 0;
 }
 
